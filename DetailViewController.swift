@@ -26,9 +26,7 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         self.title = selectedBikeStation.name
-
     }
 
     override func viewDidAppear(animated: Bool) {
@@ -37,7 +35,6 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         setUpMapViewStart()
         dropPins()
         addBikeStationsToMap()
-
     }
 
     func setUpMapViewStart() {
@@ -56,7 +53,6 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         if currentLocation.verticalAccuracy < 1000 && currentLocation.horizontalAccuracy < 1000 {
 
             locationManager.stopUpdatingLocation()
-            //            print("Current location is: \(currentLocation)")
         }
 
         else {
@@ -84,7 +80,6 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     func addBikeStationsToMap() {
 
         detailMapView.showsUserLocation = true
-
         let annotation = MKPointAnnotation()
         annotation.coordinate = selectedBikeStation.coordinate2D
         self.detailMapView.addAnnotation(annotation)
@@ -141,8 +136,6 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         cell.inServiceLabel.text = available
 
         let distance = selectedBikeStation.coordinate.distanceFromLocation(self.currentLocation)
-
-        print(self.currentLocation)
 
         let miles = distance * 0.000621371
         let bikeMiles = Double(round(10 * miles)/10)

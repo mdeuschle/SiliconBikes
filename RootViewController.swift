@@ -26,23 +26,27 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        requestLocation()
+
         self.title = "SF Bikes"
 
+        requestLocation()
+        bikeTableView.separatorStyle = .None
         if let curLoc = currentLocation {
 
             centerMapOnLocation(curLoc)
+            addBikeStationsToMap()
+            loadBikes()
         }
     }
 
-//    override func viewDidAppear(animated: Bool) {
-//
-////            addBikeStationsToMap()
-////            loadBikes()
-//    }
+    override func viewDidAppear(animated: Bool) {
+
+        bikeTableView.reloadData()
+    }
 
     func locationManager(manager: CLLocationManager, didChangeAuthorizationStatus status: CLAuthorizationStatus) {
 
+        locationManager.startUpdatingLocation()
         addBikeStationsToMap()
         loadBikes()
     }
@@ -56,6 +60,7 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func mapView(mapView: MKMapView, didUpdateUserLocation userLocation: MKUserLocation) {
 
         if let loc = userLocation.location {
+
             centerMapOnLocation(loc)
         }
     }
@@ -65,7 +70,6 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
         if let currentLoc = locations.first {
 
             currentLocation = currentLoc
-
             if currentLoc.verticalAccuracy < 1000 && currentLoc.horizontalAccuracy < 1000 {
 
                 locationManager.stopUpdatingLocation()
@@ -111,14 +115,12 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
                            let bike = Bike(bikeDictionary: divvyBike, userLocation: currLoc)
                         self.bikes.append(bike)
-
                     }
                 }
 
                 self.bikes.sortInPlace({ $0.distance < $1.distance})
 
                 dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                    //                    self.bikeTableView.reloadData()
                     self.dropPins()
                 })
             }
@@ -141,7 +143,6 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
         let bike = bikes[indexPath.row]
 
         cell.cellAddressLabel.text = bike.name
-        cell.cellAddressLabelTwo.text = bike.location
         cell.cellBikesAvailable.text = "Available Bikes: \(bike.bikes)"
 
         if let currLoc = self.currentLocation {
@@ -151,17 +152,7 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
             let bikeMiles = Double(round(10 * miles)/10)
 
             cell.cellDistanceLabel.text = "\(bikeMiles) mi"
-
         }
-
-
-
-
-        print("First table bike is \(bike.coordinate)")
-
-        print("CL is: \(self.currentLocation)")
-
-
         return cell
     }
 
@@ -197,7 +188,6 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
         locationManager.requestWhenInUseAuthorization()
         locationManager.delegate = self
-        locationManager.startUpdatingLocation()
     }
 
     func addBikeStationsToMap() {
@@ -235,7 +225,6 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
             if let currLoc = self.currentLocation {
 
                 detailView.currentLocation = currLoc
-
             }
         }
         
@@ -248,13 +237,10 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
             if let currLoc = self.currentLocation {
 
                 detailView.currentLocation = currLoc
-
             }
         }
     }
 }
-
-
 
 func locationManager(manager: CLLocationManager, didFailWithError error: NSError) {
     
