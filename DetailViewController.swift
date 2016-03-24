@@ -28,16 +28,22 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         super.viewDidLoad()
 
         self.title = selectedBikeStation.name
+
+    }
+
+    override func viewDidAppear(animated: Bool) {
+
         requestLocation()
         setUpMapViewStart()
         dropPins()
         addBikeStationsToMap()
+
     }
 
     func setUpMapViewStart() {
 
         let sanFranCord = CLLocationCoordinate2D(latitude: selectedBikeStation.lat, longitude: selectedBikeStation.lon)
-        detailMapView.setRegion(MKCoordinateRegionMake(sanFranCord, MKCoordinateSpanMake(0.035, 0.035)), animated: true)
+        detailMapView.setRegion(MKCoordinateRegionMake(sanFranCord, MKCoordinateSpanMake(0.015, 0.015)), animated: true)
     }
 
     func locationManager(manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -50,7 +56,7 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         if currentLocation.verticalAccuracy < 1000 && currentLocation.horizontalAccuracy < 1000 {
 
             locationManager.stopUpdatingLocation()
-            print("Current location is: \(currentLocation)")
+            //            print("Current location is: \(currentLocation)")
         }
 
         else {
@@ -156,7 +162,7 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         bikeStationLat = String(selectedBikeStation.lat)
         bikeStationLon = String(selectedBikeStation.lon)
         UIApplication.sharedApplication().openURL(NSURL(string: "http://maps.apple.com/maps?daddr=\(bikeStationLat),\(bikeStationLon)")!)
-
+        
         detailTableView.deselectRowAtIndexPath(indexPath, animated: true)
     }
 }

@@ -19,38 +19,45 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
     var bikesDic = [NSDictionary]()
 
     let locationManager = CLLocationManager()
-    var currentLocation = CLLocation()
+    var currentLocation = CLLocation?()
     var url = NSURL()
     var divvyBikesDic = NSDictionary()
     let bikesAnnotaion = MKPointAnnotation()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         requestLocation()
-        loadBikes()
-        addBikeStationsToMap()
-        setUpMapViewStart()
-
         self.title = "SF Bikes"
+
+        if let curLoc = currentLocation {
+
+            centerMapOnLocation(curLoc)
+        }
     }
 
-//    func mapView(mapView: MKMapView, didUpdateUserLocation userLocation: MKUserLocation) {
-//        
-//        setUpMapViewStart()
+//    override func viewDidAppear(animated: Bool) {
 //
+////            addBikeStationsToMap()
+////            loadBikes()
 //    }
 
-    func setUpMapViewStart() {
-        
-        let sanFranCord = CLLocationCoordinate2D(latitude: 37.7848382, longitude: -122.4048587)
-        bikeMapView.setRegion(MKCoordinateRegionMake(sanFranCord, MKCoordinateSpanMake(0.035, 0.035)), animated: true)
+    func locationManager(manager: CLLocationManager, didChangeAuthorizationStatus status: CLAuthorizationStatus) {
 
-//        bikeMapView.setCenterCoordinate((bikeMapView.userLocation.location?.coordinate)!, animated: true)
-//
-//
-//        bikeMapView.region = MKCoordinateRegionMakeWithDistance(currentLocation.coordinate, 3000, 3000)
-//        bikeMapView.setRegion(bikeMapView.region, animated: true)
+        addBikeStationsToMap()
+        loadBikes()
+    }
+
+    func centerMapOnLocation(location: CLLocation) {
+        let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate, 1000, 1000)
+
+        bikeMapView.setRegion(coordinateRegion, animated: true)
+    }
+
+    func mapView(mapView: MKMapView, didUpdateUserLocation userLocation: MKUserLocation) {
+
+        if let loc = userLocation.location {
+            centerMapOnLocation(loc)
+        }
     }
 
     func locationManager(manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -58,17 +65,16 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
         if let currentLoc = locations.first {
 
             currentLocation = currentLoc
-        }
 
-        if currentLocation.verticalAccuracy < 1000 && currentLocation.horizontalAccuracy < 1000 {
+            if currentLoc.verticalAccuracy < 1000 && currentLoc.horizontalAccuracy < 1000 {
 
-            locationManager.stopUpdatingLocation()
-            print("Current location is: \(currentLocation)")
-        }
+                locationManager.stopUpdatingLocation()
+            }
 
-        else {
+            else {
 
-            print("No bikes found")
+                print("No bikes found")
+            }
         }
     }
 
@@ -101,15 +107,18 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
                 for divvyBike in self.bikesDic {
 
-                    let bike = Bike(bikeDictionary: divvyBike, userLocation: self.currentLocation)
+                    if let currLoc = self.currentLocation {
 
-                    self.bikes.append(bike)
+                           let bike = Bike(bikeDictionary: divvyBike, userLocation: currLoc)
+                        self.bikes.append(bike)
+
+                    }
                 }
 
                 self.bikes.sortInPlace({ $0.distance < $1.distance})
 
                 dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                    self.bikeTableView.reloadData()
+                    //                    self.bikeTableView.reloadData()
                     self.dropPins()
                 })
             }
@@ -135,14 +144,23 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
         cell.cellAddressLabelTwo.text = bike.location
         cell.cellBikesAvailable.text = "Available Bikes: \(bike.bikes)"
 
-        let distance = bike.coordinate.distanceFromLocation(self.currentLocation)
+        if let currLoc = self.currentLocation {
 
-        print(self.currentLocation)
+            let distance = bike.coordinate.distanceFromLocation(currLoc)
+            let miles = distance * 0.000621371
+            let bikeMiles = Double(round(10 * miles)/10)
 
-        let miles = distance * 0.000621371
-        let bikeMiles = Double(round(10 * miles)/10)
+            cell.cellDistanceLabel.text = "\(bikeMiles) mi"
 
-        cell.cellDistanceLabel.text = "\(bikeMiles) mi"
+        }
+
+
+
+
+        print("First table bike is \(bike.coordinate)")
+
+        print("CL is: \(self.currentLocation)")
+
 
         return cell
     }
@@ -150,6 +168,7 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func dropPins() {
 
         for bike in bikes {
+
             let newPin = BikePointAnnotation()
             newPin.coordinate = bike.coordinate2D
             newPin.title = bike.name
@@ -177,8 +196,8 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func requestLocation() {
 
         locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
         locationManager.delegate = self
+        locationManager.startUpdatingLocation()
     }
 
     func addBikeStationsToMap() {
@@ -213,16 +232,29 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
             let selectedPoint = bikeMapView.selectedAnnotations.first as! BikePointAnnotation
             detailView.selectedBikeStation = selectedPoint.bikeStation
 
+            if let currLoc = self.currentLocation {
+
+                detailView.currentLocation = currLoc
+
+            }
         }
-
+        
         if segue.identifier == "bikeCellSegue" {
-
+            
             let detailView = segue.destinationViewController as! DetailViewController
             let bike = bikes[(bikeTableView.indexPathForSelectedRow?.row)!]
             detailView.selectedBikeStation = bike
+
+            if let currLoc = self.currentLocation {
+
+                detailView.currentLocation = currLoc
+
+            }
         }
     }
 }
+
+
 
 func locationManager(manager: CLLocationManager, didFailWithError error: NSError) {
     
