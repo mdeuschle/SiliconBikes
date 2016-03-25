@@ -135,7 +135,9 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
 
         cell.inServiceLabel.text = available
 
-        let distance = selectedBikeStation.coordinate.distanceFromLocation(self.currentLocation)
+           let distance = self.currentLocation.distanceFromLocation(CLLocation(latitude: selectedBikeStation.lat, longitude: selectedBikeStation.lon))
+
+//        let distance = selectedBikeStation.coordinate.distanceFromLocation(self.currentLocation)
 
         let miles = distance * 0.000621371
         let bikeMiles = Double(round(10 * miles)/10)
