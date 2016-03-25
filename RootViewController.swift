@@ -24,7 +24,7 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.title = "SF Bikes"
+        self.title = "Silicon Bikes"
         bikeTableView.separatorStyle = .None
 
         requestLocation()
