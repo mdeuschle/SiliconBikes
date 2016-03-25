@@ -17,9 +17,6 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     let locationManager = CLLocationManager()
     var currentLocation = CLLocation()
     let bikesAnnotaion = MKPointAnnotation()
-    var available = ""
-    var bikeStationLat = ""
-    var bikeStationLon = ""
 
     @IBOutlet var detailMapView: MKMapView!
     @IBOutlet var detailTableView: UITableView!
@@ -31,34 +28,14 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
 
     override func viewDidAppear(animated: Bool) {
 
-        requestLocation()
         setUpMapViewStart()
         dropPins()
-        addBikeStationsToMap()
     }
 
     func setUpMapViewStart() {
 
         let sanFranCord = CLLocationCoordinate2D(latitude: selectedBikeStation.lat, longitude: selectedBikeStation.lon)
         detailMapView.setRegion(MKCoordinateRegionMake(sanFranCord, MKCoordinateSpanMake(0.015, 0.015)), animated: true)
-    }
-
-    func locationManager(manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-
-        if let currentLoc = locations.first {
-
-            currentLocation = currentLoc
-        }
-
-        if currentLocation.verticalAccuracy < 1000 && currentLocation.horizontalAccuracy < 1000 {
-
-            locationManager.stopUpdatingLocation()
-        }
-
-        else {
-
-            print("No bikes found")
-        }
     }
 
     func dropPins() {
@@ -68,21 +45,8 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         newPin.title = selectedBikeStation.name
         newPin.subtitle = "Bikes Available: \(selectedBikeStation.bikes)"
         newPin.bikeStation = selectedBikeStation
+
         detailMapView.addAnnotation(newPin)
-    }
-
-    func requestLocation() {
-
-        locationManager.startUpdatingLocation()
-        locationManager.delegate = self
-    }
-
-    func addBikeStationsToMap() {
-
-        detailMapView.showsUserLocation = true
-        let annotation = MKPointAnnotation()
-        annotation.coordinate = selectedBikeStation.coordinate2D
-        self.detailMapView.addAnnotation(annotation)
     }
 
     func mapView(mapView: MKMapView, viewForAnnotation annotation: MKAnnotation) -> MKAnnotationView? {
@@ -97,23 +61,9 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         return mapPin
     }
 
-
     func locationManager(manager: CLLocationManager, didFailWithError error: NSError) {
 
         print(error)
-    }
-
-    func mapView(mapView: MKMapView, annotationView view: MKAnnotationView,
-        calloutAccessoryControlTapped control: UIControl) {
-
-            let selectedLoc = view.annotation
-            let currentLocMapItem = MKMapItem.mapItemForCurrentLocation()
-            let selectedPlacemark = MKPlacemark(coordinate: selectedLoc!.coordinate, addressDictionary: nil)
-            let selectedMapItem = MKMapItem(placemark: selectedPlacemark)
-            let mapItems = [selectedMapItem, currentLocMapItem]
-            let launchOptions = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
-
-            MKMapItem.openMapsWithItems(mapItems, launchOptions:launchOptions)
     }
 
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
@@ -122,6 +72,8 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
 
         cell.addressLabel.text = selectedBikeStation.name
         cell.bikesAvailableLabel.text = "Available Bikes: \(selectedBikeStation.bikes)"
+
+        var available = ""
 
         if selectedBikeStation.renting == true {
 
@@ -135,9 +87,7 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
 
         cell.inServiceLabel.text = available
 
-           let distance = self.currentLocation.distanceFromLocation(CLLocation(latitude: selectedBikeStation.lat, longitude: selectedBikeStation.lon))
-
-//        let distance = selectedBikeStation.coordinate.distanceFromLocation(self.currentLocation)
+        let distance = self.currentLocation.distanceFromLocation(CLLocation(latitude: selectedBikeStation.lat, longitude: selectedBikeStation.lon))
 
         let miles = distance * 0.000621371
         let bikeMiles = Double(round(10 * miles)/10)
@@ -152,17 +102,27 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         return 1
     }
 
+    func mapView(mapView: MKMapView, annotationView view: MKAnnotationView,
+                 calloutAccessoryControlTapped control: UIControl) {
+
+        bikeStationDirections(selectedBikeStation.lat, lon: selectedBikeStation.lon)
+
+    }
+
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
 
-        bikeStationLat = String(selectedBikeStation.lat)
-        bikeStationLon = String(selectedBikeStation.lon)
-        UIApplication.sharedApplication().openURL(NSURL(string: "http://maps.apple.com/maps?daddr=\(bikeStationLat),\(bikeStationLon)")!)
-        
-        detailTableView.deselectRowAtIndexPath(indexPath, animated: true)
+        bikeStationDirections(selectedBikeStation.lat, lon: selectedBikeStation.lon)
+
+    }
+
+    func bikeStationDirections(lat: Double, lon: Double) {
+
+          UIApplication.sharedApplication().openURL(NSURL(string: "http://maps.apple.com/maps?daddr=\(String(lat)),\(String(lon))")!)
     }
 }
 
 class DetailPointAnnotation : MKPointAnnotation {
+    
     var bikeStation : Bike!
 }
 
