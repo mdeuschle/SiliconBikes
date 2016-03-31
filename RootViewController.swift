@@ -21,6 +21,10 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
     var currentLocation = CLLocation()
     let bikesAnnotaion = MKPointAnnotation()
 
+    var timer = NSTimer()
+
+    var locationFound = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -28,8 +32,15 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
         bikeTableView.separatorStyle = .None
 
         requestLocation()
-        downloadBikeStations()
-        addBikeStationsToMap()
+        print(bikes)
+
+        if locationFound {
+
+            downloadBikeStations()
+        } else {
+
+            timer = NSTimer.scheduledTimerWithTimeInterval(2.0, target: self, selector: #selector(RootViewController.downloadBikeStations), userInfo: nil, repeats: false)
+        }
     }
 
     override func viewDidAppear(animated: Bool) {
@@ -68,9 +79,9 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
             let newBikeStation = Bike()
             newBikeStation.initWithData(bikestation, currentLocation: self.currentLocation)
             bikes.append(newBikeStation)
+            bikeTableView.reloadData()
         }
         bikes.sortInPlace({ $0.0.distance < $0.1.distance })
-        self.bikeTableView.reloadData()
         dropPins()
     }
 
@@ -80,20 +91,15 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
         bikeMapView.setRegion(coordinateRegion, animated: true)
     }
 
-    func mapView(mapView: MKMapView, didUpdateUserLocation userLocation: MKUserLocation) {
-
-        if let loc = userLocation.location {
-
-            centerMapOnLocation(loc)
-            self.bikeTableView.reloadData()
-        }
-    }
 
     func locationManager(manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
 
         if let currentLoc = locations.first {
 
             currentLocation = currentLoc
+            locationFound = true
+            bikeTableView.reloadData()
+
             if currentLoc.verticalAccuracy < 1000 && currentLoc.horizontalAccuracy < 1000 {
 
                 locationManager.stopUpdatingLocation()
@@ -120,18 +126,6 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
         performSegueWithIdentifier("bikeDetailSegue", sender: nil)
     }
 
-    func addBikeStationsToMap() {
-
-        bikeMapView.showsUserLocation = true
-
-        for bikeStation in self.bikes {
-
-            let annotation = MKPointAnnotation()
-            annotation.coordinate = bikeStation.coordinate2D
-            self.bikeMapView.addAnnotation(annotation)
-        }
-    }
-
     func mapView(mapView: MKMapView, viewForAnnotation annotation: MKAnnotation) -> MKAnnotationView? {
 
         if annotation.isEqual(mapView.userLocation) {
@@ -153,7 +147,9 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
         let cell = tableView.dequeueReusableCellWithIdentifier("Cell") as! TableViewCell
 
-        let bike = bikes[indexPath.row]
+        let bike: Bike!
+
+        bike = bikes[indexPath.row]
 
         cell.cellAddressLabel.text = bike.name
         cell.cellBikesAvailable.text = "Available Bikes: \(bike.bikes)"
@@ -195,7 +191,7 @@ class RootViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
 func locationManager(manager: CLLocationManager, didFailWithError error: NSError) {
     
-    print(error)
+    print(error.localizedDescription)
 }
 
 class BikePointAnnotation : MKPointAnnotation {
